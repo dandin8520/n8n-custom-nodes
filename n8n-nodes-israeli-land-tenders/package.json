@@ -1,10 +1,12 @@
 {
-  "name": "n8n-nodes-israeli-land-tenders",
+  "name": "n8n-nodes-nadlan-rami",
   "version": "0.1.0",
-  "description": "n8n node for accessing Israeli Land Authority tender and auction data",
+  "description": "n8n node for accessing Israeli Land Authority (Nadlan Rami) tender and auction data",
   "keywords": [
     "n8n-community-node-package",
     "n8n",
+    "nadlan",
+    "rami",
     "israeli-land-authority",
     "tenders",
     "auctions",

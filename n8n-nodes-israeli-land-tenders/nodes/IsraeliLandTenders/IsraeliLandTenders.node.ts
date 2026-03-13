@@ -47,15 +47,15 @@ async function retryRequest(
 
 export class IsraeliLandTenders implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Israeli Land Tenders',
-		name: 'israeliLandTenders',
+		displayName: 'Nadlan Rami',
+		name: 'nadlanRami',
 		icon: 'file:israeliLandTenders.svg',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
-		description: 'Access Israeli Land Authority tender and auction data',
+		description: 'Access Israeli Land Authority (Rami) tender and auction data',
 		defaults: {
-			name: 'Israeli Land Tenders',
+			name: 'Nadlan Rami',
 		},
 		inputs: ['main'],
 		outputs: ['main'],

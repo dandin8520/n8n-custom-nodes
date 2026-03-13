@@ -1,10 +1,11 @@
 {
-  "name": "n8n-nodes-mavat-plans",
+  "name": "n8n-nodes-nadlan-mavat",
   "version": "0.1.0",
-  "description": "n8n node for accessing MAVAT (Israeli Planning Administration) planning proposal data",
+  "description": "n8n node for accessing Nadlan Mavat (Israeli Planning Administration) planning proposal data",
   "keywords": [
     "n8n-community-node-package",
     "n8n",
+    "nadlan",
     "mavat",
     "israel",
     "planning",

@@ -38,15 +38,15 @@ async function retryRequest(
 
 export class DiraLehaskir implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Dira Lehaskir',
-		name: 'diraLehaskir',
+		displayName: 'Nadlan Dira Lehaskir',
+		name: 'nadlanDiraLehaskir',
 		icon: 'file:diraLehaskir.svg',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
 		description: 'Access Dira Lehaskir (דירה להשכיר) housing project data with rental units',
 		defaults: {
-			name: 'Dira Lehaskir',
+			name: 'Nadlan Dira Lehaskir',
 		},
 		inputs: ['main'],
 		outputs: ['main'],
@@ -57,6 +57,12 @@ export class DiraLehaskir implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
+					{
+						name: 'Get All Plans',
+						value: 'getAllPlans',
+						action: 'Get all active plans (filtered)',
+						description: 'Get all plans excluding suspended/pending (filters: סטטוס_מנהל != מושהה/התנעה, harshaa != מושהה)',
+					},
 					{
 						name: 'Search Plans',
 						value: 'searchPlans',
@@ -73,7 +79,7 @@ export class DiraLehaskir implements INodeType {
 						name: 'Get Active Plans',
 						value: 'getActivePlans',
 						action: 'Get all active plans',
-						description: 'Get list of all active planning proposals',
+						description: 'Get list of all active planning proposals (harshaa = פעיל)',
 					},
 					{
 						name: 'Get Plans by Municipality',
@@ -85,7 +91,7 @@ export class DiraLehaskir implements INodeType {
 						name: 'Get Approved Plans',
 						value: 'getApprovedPlans',
 						action: 'Get approved plans',
-						description: 'Get list of approved planning proposals',
+						description: 'Get list of approved planning proposals (סטטוס_מנהל = מאושרת)',
 					},
 				],
 				default: 'searchPlans',
@@ -235,6 +241,13 @@ export class DiraLehaskir implements INodeType {
 						description: 'Whether to return only plans with rental units',
 					},
 					{
+						displayName: 'Include Suspended Plans',
+						name: 'includeSuspended',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to include suspended plans (מושהה/התנעה). Default: false (matches UI behavior)',
+					},
+					{
 						displayName: 'Limit',
 						name: 'limit',
 						type: 'number',
@@ -249,11 +262,11 @@ export class DiraLehaskir implements INodeType {
 				type: 'number',
 				displayOptions: {
 					show: {
-						operation: ['getActivePlans', 'getPlansByMunicipality', 'getApprovedPlans'],
+						operation: ['getAllPlans', 'getActivePlans', 'getPlansByMunicipality', 'getApprovedPlans'],
 					},
 				},
-				default: 50,
-				description: 'Maximum number of results to return',
+				default: 1000,
+				description: 'Maximum number of results to return (UI default: all results, filtered)',
 			},
 		],
 	};
@@ -275,7 +288,38 @@ export class DiraLehaskir implements INodeType {
 
 				let responseData: any;
 
-				if (operation === 'searchPlans') {
+				if (operation === 'getAllPlans') {
+					const limit = this.getNodeParameter('limit', i, 1000) as number;
+
+					// Get all plans with UI-style filtering
+					// Exclude: סטטוס_מנהל = 'מושהה' OR 'התנעה', AND harshaa = 'מושהה'
+					const whereClause = "סטטוס_מנהל <> 'מושהה' AND סטטוס_מנהל <> 'התנעה' AND harshaa <> 'מושהה'";
+
+					responseData = await retryRequest(
+						async () => {
+							const response = await this.helpers.request({
+								method: 'GET',
+								url: `${baseUrl}/query`,
+								qs: {
+									where: whereClause,
+									outFields: '*',
+									returnGeometry: 'false',
+									f: 'json',
+									resultRecordCount: limit,
+								},
+								json: true,
+							});
+							return response;
+						},
+						3,
+						this,
+					);
+
+					const features = responseData.features || [];
+					for (const feature of features) {
+						returnData.push({ json: feature.attributes });
+					}
+				} else if (operation === 'searchPlans') {
 					const municipality = this.getNodeParameter('municipality', i, '') as string;
 					const status = this.getNodeParameter('status', i, '') as string;
 					const harshaa = this.getNodeParameter('harshaa', i, '') as string;
@@ -286,11 +330,19 @@ export class DiraLehaskir implements INodeType {
 						activeOnly?: boolean;
 						approvedOnly?: boolean;
 						withRent?: boolean;
+						includeSuspended?: boolean;
 						limit?: number;
 					};
 
 					// Build WHERE clause
 					const conditions: string[] = [];
+
+					// Default filter (matches UI behavior): exclude suspended plans
+					if (!additionalOptions.includeSuspended) {
+						conditions.push("סטטוס_מנהל <> 'מושהה'");
+						conditions.push("סטטוס_מנהל <> 'התנעה'");
+						conditions.push("harshaa <> 'מושהה'");
+					}
 
 					if (municipality) {
 						conditions.push(`rashut_mek = '${municipality}'`);

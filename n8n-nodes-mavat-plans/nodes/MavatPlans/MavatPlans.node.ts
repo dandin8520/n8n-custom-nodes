@@ -55,15 +55,15 @@ async function retryRequest(
 
 export class MavatPlans implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'MAVAT Plans',
-		name: 'mavatPlans',
+		displayName: 'Nadlan Mavat',
+		name: 'nadlanMavat',
 		icon: 'file:mavatPlans.svg',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
 		description: 'Access MAVAT (Israeli Planning Administration) planning proposal data',
 		defaults: {
-			name: 'MAVAT Plans',
+			name: 'Nadlan Mavat',
 		},
 		inputs: ['main'],
 		outputs: ['main'],
