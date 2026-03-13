@@ -6,6 +6,45 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 
+// Helper function to implement rate limiting
+async function rateLimit(delayMs: number): Promise<void> {
+	await new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+// Helper function to format dates to Israeli format (dd/mm/yy)
+function formatIsraeliDate(date: Date | string): string {
+	const d = typeof date === 'string' ? new Date(date) : date;
+	const day = String(d.getDate()).padStart(2, '0');
+	const month = String(d.getMonth() + 1).padStart(2, '0');
+	const year = String(d.getFullYear()).slice(-2);
+	return `${day}/${month}/${year}`;
+}
+
+// Helper function to retry failed requests
+async function retryRequest(
+	fn: () => Promise<any>,
+	retries: number,
+	context: IExecuteFunctions,
+): Promise<any> {
+	for (let i = 0; i < retries; i++) {
+		try {
+			return await fn();
+		} catch (error: any) {
+			const statusCode = error.statusCode || error.response?.status;
+			const shouldRetry = [429, 500, 502, 503, 504].includes(statusCode);
+
+			if (i === retries - 1 || !shouldRetry) {
+				throw new NodeOperationError(
+					context.getNode(),
+					`API request failed: ${error.message}`,
+				);
+			}
+			// Exponential backoff
+			await new Promise((resolve) => setTimeout(resolve, Math.pow(2, i) * 1000));
+		}
+	}
+}
+
 export class IsraeliLandTenders implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Israeli Land Tenders',
@@ -199,52 +238,6 @@ export class IsraeliLandTenders implements INodeType {
 		],
 	};
 
-	private lastRequestTime = 0;
-
-	// Helper method to implement rate limiting
-	private async rateLimit(delayMs: number): Promise<void> {
-		const now = Date.now();
-		const timeSinceLastRequest = now - this.lastRequestTime;
-		if (timeSinceLastRequest < delayMs) {
-			await new Promise((resolve) => setTimeout(resolve, delayMs - timeSinceLastRequest));
-		}
-		this.lastRequestTime = Date.now();
-	}
-
-	// Helper method to format dates to Israeli format (dd/mm/yy)
-	private formatIsraeliDate(date: Date | string): string {
-		const d = typeof date === 'string' ? new Date(date) : date;
-		const day = String(d.getDate()).padStart(2, '0');
-		const month = String(d.getMonth() + 1).padStart(2, '0');
-		const year = String(d.getFullYear()).slice(-2);
-		return `${day}/${month}/${year}`;
-	}
-
-	// Helper method to retry failed requests
-	private async retryRequest(
-		fn: () => Promise<any>,
-		retries = 3,
-		context: IExecuteFunctions,
-	): Promise<any> {
-		for (let i = 0; i < retries; i++) {
-			try {
-				return await fn();
-			} catch (error: any) {
-				const statusCode = error.statusCode || error.response?.status;
-				const shouldRetry = [429, 500, 502, 503, 504].includes(statusCode);
-
-				if (i === retries - 1 || !shouldRetry) {
-					throw new NodeOperationError(
-						context.getNode(),
-						`API request failed: ${error.message}`,
-					);
-				}
-				// Exponential backoff
-				await new Promise((resolve) => setTimeout(resolve, Math.pow(2, i) * 1000));
-			}
-		}
-	}
-
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
@@ -262,7 +255,7 @@ export class IsraeliLandTenders implements INodeType {
 				const operation = this.getNodeParameter('operation', i) as string;
 
 				// Rate limit all requests (1 second delay)
-				await this.rateLimit(1000);
+				await rateLimit(1000);
 
 				let responseData: any;
 
@@ -298,14 +291,14 @@ export class IsraeliLandTenders implements INodeType {
 					if (submissionDateFrom || submissionDateTo) {
 						payload.CloseDate = {};
 						if (submissionDateFrom) {
-							payload.CloseDate.from = this.formatIsraeliDate(submissionDateFrom);
+							payload.CloseDate.from = formatIsraeliDate(submissionDateFrom);
 						}
 						if (submissionDateTo) {
-							payload.CloseDate.to = this.formatIsraeliDate(submissionDateTo);
+							payload.CloseDate.to = formatIsraeliDate(submissionDateTo);
 						}
 					}
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'POST',
@@ -329,7 +322,7 @@ export class IsraeliLandTenders implements INodeType {
 				} else if (operation === 'getTenderDetails') {
 					const michrazId = this.getNodeParameter('michrazId', i) as number;
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'GET',
@@ -350,7 +343,7 @@ export class IsraeliLandTenders implements INodeType {
 						ActiveQuickSearch: false,
 					};
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'POST',
@@ -378,11 +371,11 @@ export class IsraeliLandTenders implements INodeType {
 						ActiveMichraz: false,
 						hasResults: true,
 						CloseDate: {
-							from: this.formatIsraeliDate(dateFrom),
+							from: formatIsraeliDate(dateFrom),
 						},
 					};
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'POST',
@@ -398,7 +391,7 @@ export class IsraeliLandTenders implements INodeType {
 				} else if (operation === 'getMapDetails') {
 					const michrazId = this.getNodeParameter('michrazId', i) as number;
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'GET',
@@ -423,7 +416,8 @@ export class IsraeliLandTenders implements INodeType {
 				}
 			} catch (error) {
 				if (this.continueOnFail()) {
-					returnData.push({ json: { error: error.message } });
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					returnData.push({ json: { error: errorMessage } });
 					continue;
 				}
 				throw error;
