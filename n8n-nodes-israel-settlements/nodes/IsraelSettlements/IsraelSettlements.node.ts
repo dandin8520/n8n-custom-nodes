@@ -198,10 +198,12 @@ export class IsraelSettlements implements INodeType {
 				}
 			} catch (error) {
 				if (this.continueOnFail()) {
-					returnData.push({ json: { error: error.message } });
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					returnData.push({ json: { error: errorMessage } });
 					continue;
 				}
-				throw new NodeOperationError(this.getNode(), error.message);
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				throw new NodeOperationError(this.getNode(), errorMessage);
 			}
 		}
 

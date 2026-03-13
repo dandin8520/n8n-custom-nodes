@@ -6,6 +6,53 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 
+// Helper function to implement rate limiting
+async function rateLimit(delayMs: number): Promise<void> {
+	await new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+// Helper function to build WHERE clause for ArcGIS query
+function buildWhereClause(conditions: { [key: string]: string | number }): string {
+	const clauses: string[] = [];
+
+	for (const [field, value] of Object.entries(conditions)) {
+		if (value !== '' && value !== 0 && value !== undefined && value !== null) {
+			if (typeof value === 'string') {
+				clauses.push(`${field} = '${value}'`);
+			} else {
+				clauses.push(`${field} >= ${value}`);
+			}
+		}
+	}
+
+	return clauses.length > 0 ? clauses.join(' AND ') : '1=1';
+}
+
+// Helper function to retry failed requests
+async function retryRequest(
+	fn: () => Promise<any>,
+	retries: number,
+	context: IExecuteFunctions,
+): Promise<any> {
+	for (let i = 0; i < retries; i++) {
+		try {
+			return await fn();
+		} catch (error: any) {
+			const statusCode = error.statusCode || error.response?.status;
+			const shouldRetry = [429, 500, 502, 503, 504].includes(statusCode);
+
+			if (i === retries - 1 || !shouldRetry) {
+				throw new NodeOperationError(
+					context.getNode(),
+					`API request failed: ${error.message}`,
+				);
+			}
+			// Exponential backoff
+			await new Promise((resolve) => setTimeout(resolve, Math.pow(2, i) * 1000));
+		}
+	}
+}
+
 export class MavatPlans implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'MAVAT Plans',
@@ -156,60 +203,6 @@ export class MavatPlans implements INodeType {
 		],
 	};
 
-	private lastRequestTime = 0;
-
-	// Helper method to implement rate limiting
-	private async rateLimit(delayMs: number): Promise<void> {
-		const now = Date.now();
-		const timeSinceLastRequest = now - this.lastRequestTime;
-		if (timeSinceLastRequest < delayMs) {
-			await new Promise((resolve) => setTimeout(resolve, delayMs - timeSinceLastRequest));
-		}
-		this.lastRequestTime = Date.now();
-	}
-
-	// Helper method to build WHERE clause for ArcGIS query
-	private buildWhereClause(conditions: { [key: string]: string | number }): string {
-		const clauses: string[] = [];
-
-		for (const [field, value] of Object.entries(conditions)) {
-			if (value !== '' && value !== 0 && value !== undefined && value !== null) {
-				if (typeof value === 'string') {
-					clauses.push(`${field} = '${value}'`);
-				} else {
-					clauses.push(`${field} >= ${value}`);
-				}
-			}
-		}
-
-		return clauses.length > 0 ? clauses.join(' AND ') : '1=1';
-	}
-
-	// Helper method to retry failed requests
-	private async retryRequest(
-		fn: () => Promise<any>,
-		retries = 3,
-		context: IExecuteFunctions,
-	): Promise<any> {
-		for (let i = 0; i < retries; i++) {
-			try {
-				return await fn();
-			} catch (error: any) {
-				const statusCode = error.statusCode || error.response?.status;
-				const shouldRetry = [429, 500, 502, 503, 504].includes(statusCode);
-
-				if (i === retries - 1 || !shouldRetry) {
-					throw new NodeOperationError(
-						context.getNode(),
-						`API request failed: ${error.message}`,
-					);
-				}
-				// Exponential backoff
-				await new Promise((resolve) => setTimeout(resolve, Math.pow(2, i) * 1000));
-			}
-		}
-	}
-
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
@@ -226,7 +219,7 @@ export class MavatPlans implements INodeType {
 				const operation = this.getNodeParameter('operation', i) as string;
 
 				// Rate limit all requests (0.5 second delay)
-				await this.rateLimit(500);
+				await rateLimit(500);
 
 				let whereClause = '1=1';
 				let responseData: any;
@@ -260,10 +253,10 @@ export class MavatPlans implements INodeType {
 						conditions['district'] = district;
 					}
 
-					whereClause = this.buildWhereClause(conditions);
+					whereClause = buildWhereClause(conditions);
 					const limit = this.getNodeParameter('limit', i, 50) as number;
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'GET',
@@ -286,7 +279,7 @@ export class MavatPlans implements INodeType {
 					const planNumber = this.getNodeParameter('planNumber', i) as string;
 					whereClause = `מספר_תכנית = '${planNumber}'`;
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'GET',
@@ -309,7 +302,7 @@ export class MavatPlans implements INodeType {
 					whereClause = "harshaa = 'פעיל'";
 					const limit = this.getNodeParameter('limit', i, 50) as number;
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'GET',
@@ -332,7 +325,7 @@ export class MavatPlans implements INodeType {
 					whereClause = "סטטוס_מנהל = 'מאושרת'";
 					const limit = this.getNodeParameter('limit', i, 50) as number;
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'GET',
@@ -356,7 +349,7 @@ export class MavatPlans implements INodeType {
 					whereClause = `rashut_mek = '${municipality}'`;
 					const limit = this.getNodeParameter('limit', i, 50) as number;
 
-					responseData = await this.retryRequest(
+					responseData = await retryRequest(
 						async () =>
 							await this.helpers.request({
 								method: 'GET',
@@ -398,7 +391,8 @@ export class MavatPlans implements INodeType {
 				});
 			} catch (error) {
 				if (this.continueOnFail()) {
-					returnData.push({ json: { error: error.message } });
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					returnData.push({ json: { error: errorMessage } });
 					continue;
 				}
 				throw error;
