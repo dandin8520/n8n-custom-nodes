@@ -1,0 +1,35 @@
+# Node modules
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+temp-upload/
+
+# Archives
+*.zip
+*.tar.gz
+
+# Deployment scripts
+deploy/
+*.bat
+*.sh
+*INSTALL*.md
+*DEPLOY*.md
+*QUICK*.md
+*EASYPANEL*.md
+*CHECKLIST*.md
+*SUMMARY*.md
