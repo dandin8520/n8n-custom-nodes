@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Building/Land icon for Israeli Land Authority tenders -->
+  <rect x="20" y="40" width="60" height="50" fill="#2E5090" stroke="#1A3A6B" stroke-width="2"/>
+  <rect x="30" y="50" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="45" y="50" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="60" y="50" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="30" y="65" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="45" y="65" width="10" height="10" fill="#FFFFFF"/>
+  <rect x="60" y="65" width="10" height="10" fill="#FFFFFF"/>
+  <polygon points="20,40 50,20 80,40" fill="#1A3A6B"/>
+  <rect x="42" y="75" width="16" height="15" fill="#8B4513"/>
+  <!-- Star of David element -->
+  <polygon points="50,10 52,15 48,15" fill="#0038B8"/>
+  <polygon points="50,18 48,13 52,13" fill="#0038B8"/>
+</svg>

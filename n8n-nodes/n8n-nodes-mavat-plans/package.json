@@ -1,0 +1,57 @@
+{
+  "name": "n8n-nodes-nadlan-mavat",
+  "version": "0.1.0",
+  "description": "n8n node for accessing Nadlan Mavat (Israeli Planning Administration) planning proposal data",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "nadlan",
+    "mavat",
+    "israel",
+    "planning",
+    "urban-planning",
+    "construction"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/n8n-nodes-mavat-plans",
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/n8n-nodes-mavat-plans.git"
+  },
+  "scripts": {
+    "build": "npx --package typescript tsc && npx gulp build:icons",
+    "dev": "npx --package typescript tsc --watch",
+    "format": "npx prettier nodes --write",
+    "lint": "npx eslint nodes package.json",
+    "lintfix": "npx eslint nodes package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": [
+      "dist/nodes/MavatPlans/MavatPlans.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-n8n-nodes-base": "^1.0.0",
+    "gulp": "^4.0.2",
+    "gulp-cli": "^2.3.0",
+    "n8n-workflow": "^1.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

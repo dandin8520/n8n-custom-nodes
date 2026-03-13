@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Map pin icon for settlements -->
+  <ellipse cx="50" cy="85" rx="20" ry="5" fill="#A0C4E8" opacity="0.5"/>
+  <path d="M 50 20 C 38 20 28 30 28 42 C 28 58 50 80 50 80 C 50 80 72 58 72 42 C 72 30 62 20 50 20 Z" fill="#2E5090" stroke="#1A3A6B" stroke-width="2"/>
+  <circle cx="50" cy="42" r="8" fill="#FFFFFF"/>
+  <!-- Star of David inside pin -->
+  <polygon points="50,37 51,39 49,39" fill="#0038B8"/>
+  <polygon points="50,41 49,38 51,38" fill="#0038B8"/>
+</svg>
