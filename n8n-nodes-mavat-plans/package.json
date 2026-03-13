@@ -23,11 +23,11 @@
   },
   "main": "index.js",
   "scripts": {
-    "build": "tsc && gulp build:icons",
-    "dev": "tsc --watch",
-    "format": "prettier nodes --write",
-    "lint": "eslint nodes package.json",
-    "lintfix": "eslint nodes package.json --fix",
+    "build": "npx tsc && npx gulp build:icons",
+    "dev": "npx tsc --watch",
+    "format": "npx prettier nodes --write",
+    "lint": "npx eslint nodes package.json",
+    "lintfix": "npx eslint nodes package.json --fix",
     "prepublishOnly": "npm run build && npm run lint"
   },
   "files": [

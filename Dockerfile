@@ -2,18 +2,10 @@ FROM n8nio/n8n:latest
 
 USER root
 
-# Install TypeScript and gulp globally and ensure they're in PATH
-RUN npm install -g typescript gulp-cli && \
-    ln -sf /usr/local/lib/node_modules/.bin/tsc /usr/local/bin/tsc && \
-    ln -sf /usr/local/lib/node_modules/.bin/gulp /usr/local/bin/gulp
-
 # Copy the custom nodes
 COPY n8n-nodes-israeli-land-tenders /usr/local/lib/node_modules/n8n-nodes-israeli-land-tenders
 COPY n8n-nodes-mavat-plans /usr/local/lib/node_modules/n8n-nodes-mavat-plans
 COPY n8n-nodes-israel-settlements /usr/local/lib/node_modules/n8n-nodes-israel-settlements
-
-# Set PATH to include global npm binaries
-ENV PATH="/usr/local/lib/node_modules/.bin:${PATH}"
 
 # Install dependencies and build each package
 WORKDIR /usr/local/lib/node_modules/n8n-nodes-israeli-land-tenders
