@@ -3,15 +3,19 @@ FROM n8nio/n8n:latest
 USER root
 
 # Install build dependencies and TypeScript globally
-RUN apk add --no-cache python3 make g++ && \
-    npm install -g typescript gulp-cli
+# n8n uses Debian-based image, so use apt-get instead of apk
+RUN apt-get update && \
+    apt-get install -y python3 make g++ && \
+    npm install -g typescript gulp-cli && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy the custom nodes
 COPY n8n-nodes-israeli-land-tenders /usr/local/lib/node_modules/n8n-nodes-israeli-land-tenders
 COPY n8n-nodes-mavat-plans /usr/local/lib/node_modules/n8n-nodes-mavat-plans
 COPY n8n-nodes-israel-settlements /usr/local/lib/node_modules/n8n-nodes-israel-settlements
 
-# Install dependencies for each package
+# Install dependencies and build each package
 WORKDIR /usr/local/lib/node_modules/n8n-nodes-israeli-land-tenders
 RUN npm install && npm run build
 
