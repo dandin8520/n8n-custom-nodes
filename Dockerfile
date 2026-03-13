@@ -2,13 +2,8 @@ FROM n8nio/n8n:latest
 
 USER root
 
-# Install build dependencies and TypeScript globally
-# n8n uses Debian-based image, so use apt-get instead of apk
-RUN apt-get update && \
-    apt-get install -y python3 make g++ && \
-    npm install -g typescript gulp-cli && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install TypeScript and gulp globally (no system packages needed)
+RUN npm install -g typescript gulp-cli
 
 # Copy the custom nodes
 COPY n8n-nodes-israeli-land-tenders /usr/local/lib/node_modules/n8n-nodes-israeli-land-tenders
