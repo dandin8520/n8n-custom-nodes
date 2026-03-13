@@ -8,14 +8,15 @@ COPY n8n-nodes-mavat-plans /usr/local/lib/node_modules/n8n-nodes-mavat-plans
 COPY n8n-nodes-israel-settlements /usr/local/lib/node_modules/n8n-nodes-israel-settlements
 
 # Install dependencies and build each package
+# Use --include=dev to ensure devDependencies are installed even if NODE_ENV=production
 WORKDIR /usr/local/lib/node_modules/n8n-nodes-israeli-land-tenders
-RUN npm install && npm run build
+RUN npm install --include=dev && npm run build
 
 WORKDIR /usr/local/lib/node_modules/n8n-nodes-mavat-plans
-RUN npm install && npm run build
+RUN npm install --include=dev && npm run build
 
 WORKDIR /usr/local/lib/node_modules/n8n-nodes-israel-settlements
-RUN npm install && npm run build
+RUN npm install --include=dev && npm run build
 
 # Clean up dev dependencies to reduce image size
 RUN cd /usr/local/lib/node_modules/n8n-nodes-israeli-land-tenders && npm prune --production && \
