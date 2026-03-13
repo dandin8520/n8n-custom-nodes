@@ -20,7 +20,6 @@
     "type": "git",
     "url": "git+https://github.com/yourusername/n8n-nodes-israel-settlements.git"
   },
-  "main": "index.js",
   "scripts": {
     "build": "npx --package typescript tsc && npx gulp build:icons",
     "dev": "npx --package typescript tsc --watch",
